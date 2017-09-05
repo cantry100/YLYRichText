@@ -86,7 +86,6 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 	bool m_IsFontTextureDirty = false;
 	bool m_IsPopulateMeshDone = false;
 	bool m_IsDrag = false;
-	static protected Material s_DefaultText = null;
 	
 	public Font font {
 		get
@@ -339,16 +338,6 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 			m_Alignment = value;
 
 			UpdateLines();
-		}
-	}
-
-	public override Material defaultMaterial
-	{
-		get
-		{
-			if (s_DefaultText == null)
-				s_DefaultText = Canvas.GetDefaultCanvasTextMaterial();
-			return s_DefaultText;
 		}
 	}
 
@@ -625,12 +614,11 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 			}
 		}
 
-		public void OnFillVBO(ref System.Collections.Generic.List<UIVertex> vbo, ref int j){
+		public void OnPopulateCharMesh(ref VertexHelper vh, ref int j){
 			int count = charDatas.Count;
 			bool needOutLineTmp = false; //是否需要描边
 			//Vector3[] outLineOffsetPos = new Vector3[]{new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), new Vector3(1, -1, 0), new Vector3(0, -1, 0), new Vector3(-1, -1, 0), new Vector3(-1, 0, 0), new Vector3(-1, 1, 0)};
 			Vector3[] outLineOffsetPos = new Vector3[]{new Vector3(1, 1, 0), new Vector3(1, -1, 0), new Vector3(-1, -1, 0), new Vector3(-1, 1, 0)};
-			UIVertex vert = UIVertex.simpleVert;
 			for(int i=0;i<count;i++){
 				needOutLineTmp = false;
 				if (charDatas [i].cType == CharType.Normal) { //下划线
@@ -639,33 +627,22 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 
 				if(ylyRichText.isNeedOutLine && needOutLineTmp){
 					for(int k=0;k<4;k++){
-						vert.color = ylyRichText.outLineColor;
-
-						vert.position = charDatas [i].vertices [3].position + outLineOffsetPos [k];
-						vert.uv0 = charDatas [i].vertices [3].uv0;
-						vbo.Add(vert);
-
-						vert.position = charDatas [i].vertices [0].position + outLineOffsetPos [k];
-						vert.uv0 = charDatas [i].vertices [0].uv0;
-						vbo.Add(vert);
-
-						vert.position = charDatas [i].vertices [1].position + outLineOffsetPos [k];
-						vert.uv0 = charDatas [i].vertices [1].uv0;
-						vbo.Add(vert);
-
-						vert.position = charDatas [i].vertices [2].position + outLineOffsetPos [k];
-						vert.uv0 = charDatas [i].vertices [2].uv0;
-						vbo.Add(vert);
-
+						vh.AddVert(charDatas[i].vertices[0].position + outLineOffsetPos[k], ylyRichText.outLineColor, charDatas[i].vertices[0].uv0);
+						vh.AddVert(charDatas[i].vertices[1].position + outLineOffsetPos[k], ylyRichText.outLineColor, charDatas[i].vertices[1].uv0);
+						vh.AddVert(charDatas[i].vertices[2].position + outLineOffsetPos[k], ylyRichText.outLineColor, charDatas[i].vertices[2].uv0);
+						vh.AddVert(charDatas[i].vertices[3].position + outLineOffsetPos[k], ylyRichText.outLineColor, charDatas[i].vertices[3].uv0);
+						vh.AddTriangle(4 * j + 0, 4 * j + 1, 4 * j + 2);
+						vh.AddTriangle(4 * j + 0, 4 * j + 2, 4 * j + 3);
 						j++;
 					}
 				}
 
-				vbo.Add(charDatas [i].vertices [3]);
-				vbo.Add(charDatas [i].vertices [0]);
-				vbo.Add(charDatas [i].vertices [1]);
-				vbo.Add(charDatas [i].vertices [2]);
-
+				vh.AddVert(charDatas[i].vertices[0].position, charDatas[i].vertices[0].color, charDatas[i].vertices[0].uv0);
+				vh.AddVert(charDatas[i].vertices[1].position, charDatas[i].vertices[1].color, charDatas[i].vertices[1].uv0);
+				vh.AddVert(charDatas[i].vertices[2].position, charDatas[i].vertices[2].color, charDatas[i].vertices[2].uv0);
+				vh.AddVert(charDatas[i].vertices[3].position, charDatas[i].vertices[3].color, charDatas[i].vertices[3].uv0);
+				vh.AddTriangle(4 * j + 0, 4 * j + 1, 4 * j + 2);
+				vh.AddTriangle(4 * j + 0, 4 * j + 2, 4 * j + 3);
 				j++;
 			}
 		}
@@ -694,19 +671,15 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 	}
 
 	protected YlyRichText(){
-
-	}
-
-	protected override void Awake(){
-		base.Awake();
-
-		if(m_Font == null){
-			m_Font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-		}
+		useLegacyMeshGeneration = false;
 	}
 
 	protected override void Start(){
 		base.Start();
+
+		if(m_Font == null){
+			m_Font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+		}
 
 		//Debug.Log ("==========================rich text start");
 		Font.textureRebuilt += FontTextureRebuilt;
@@ -762,13 +735,14 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		m_IsDrag = false;
 	}
 
-	protected override void OnFillVBO(System.Collections.Generic.List<UIVertex> vbo) {
-		vbo.Clear();
+	protected override void OnPopulateMesh(VertexHelper vh){
+		vh.Clear();
 
+		//Debug.Log ("==============================OnPopulateMesh");
 		int j = 0;
 
 		for (int i = 0; i < m_Lines.Count; i++) {
-			m_Lines[i].OnFillVBO(ref vbo, ref j);
+			m_Lines[i].OnPopulateCharMesh(ref vh, ref j);
 		}
 
 		m_IsPopulateMeshDone = true;

@@ -12,10 +12,10 @@ using System.Text;
 
 class YlyRichTextParser
 {
-    //0: normal char
-    //10000 ~ 99999 rich text, 分高三位与低两位，高三位用来标记富文本类型，低二位标记控制块长度;
-    //高三位如下;
-    //100-101: <emote=001>类型; #000-#999类型;          //表情字符;
+	//0: normal char
+	//10000 ~ 99999 rich text, 分高三位与低两位，高三位用来标记富文本类型，低二位标记控制块长度;
+	//高三位如下;
+	//100-101: <emote=001>类型; #000-#999类型;          //表情字符;
 	//102: <res=path>类型;                              //用路径表示的png图片;
 	//103: <icon=assetName>类型;                        //定制图标，如银两、经验、元宝等图标;
 	//200: <color=ffffffff>类型;        				//颜色代码;
@@ -36,17 +36,17 @@ class YlyRichTextParser
 	//214: </d>类型;                                    //删除线终止符;
 	//215: </d>类型;                                    //删除线终止符;
 
-    public const int RICHTEXT_MULL_BASE = 100;
-    public const int RICHTEXT_EMOTE_BASE = 100 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_ANIM_EMOTE_BASE = 101 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_RES_PATH_BASE = 102 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_MULL_BASE = 100;
+	public const int RICHTEXT_EMOTE_BASE = 100 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_ANIM_EMOTE_BASE = 101 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_RES_PATH_BASE = 102 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_CICON_BASE = 103 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_COLOR_BASE = 200 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_LINK_BASE = 201 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_UNDER_LINE_BASE = 202 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_LINK_END = 203 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_COLOR_BASE = 200 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_LINK_BASE = 201 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_UNDER_LINE_BASE = 202 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_LINK_END = 203 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_COLOR_END = 204 * RICHTEXT_MULL_BASE;
-    public const int RICHTEXT_ENTER = 205 * RICHTEXT_MULL_BASE;
+	public const int RICHTEXT_ENTER = 205 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_UNDER_LINE_END = 206 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_BOLD_BASE = 207 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_BOLD_END = 208 * RICHTEXT_MULL_BASE;
@@ -57,35 +57,35 @@ class YlyRichTextParser
 	public const int RICHTEXT_DELETE_LINE_BASE = 213 * RICHTEXT_MULL_BASE;
 	public const int RICHTEXT_DELETE_LINE_END = 214 * RICHTEXT_MULL_BASE;
 
-    public const int RICHTEXT_UNKNOWN = -9999;
-    public const int FIXED_LEN_COLOR_BLOCK = 16; //<color=ffffffff>;
+	public const int RICHTEXT_UNKNOWN = -9999;
+	public const int FIXED_LEN_COLOR_BLOCK = 16; //<color=ffffffff>;
 	public const int FIXED_LEN_COLOR_MORPH_BLOCK = 24; //<color=ffffffffffffffff>;
 
 	//静态表情id范围：001 ~ 499，可根据实际情况修改(static emote id range, can be modified according to actual condition)
 	public const int EMOTE_IDX_BEGIN = 1;
 	public const int EMOTE_IDX_END = 499;
 	//动态表情id范围：500 ~ 999，可根据实际情况修改(dynamic emote id range, can be modified according to actual condition)
-    public const int ANIM_EMOTE_IDX_BEGIN = 500;
-    public const int ANIM_EMOTE_IDX_END = 999;
+	public const int ANIM_EMOTE_IDX_BEGIN = 500;
+	public const int ANIM_EMOTE_IDX_END = 999;
 
 	static int[] _mask;
 	static Dictionary<int, string> _parms;
 	static Dictionary<string, int> _preLoadAsset;
 	static StringBuilder _logStr = new StringBuilder();
-    public static int GetEmoteType(int idx)
-    {
-        if (idx >= ANIM_EMOTE_IDX_BEGIN && idx <= ANIM_EMOTE_IDX_END)
-            return RICHTEXT_ANIM_EMOTE_BASE;
-        else if (idx >= EMOTE_IDX_BEGIN && idx <= EMOTE_IDX_END)
-            return RICHTEXT_EMOTE_BASE;
-        else
-            return RICHTEXT_UNKNOWN;
-    }
+	public static int GetEmoteType(int idx)
+	{
+		if (idx >= ANIM_EMOTE_IDX_BEGIN && idx <= ANIM_EMOTE_IDX_END)
+			return RICHTEXT_ANIM_EMOTE_BASE;
+		else if (idx >= EMOTE_IDX_BEGIN && idx <= EMOTE_IDX_END)
+			return RICHTEXT_EMOTE_BASE;
+		else
+			return RICHTEXT_UNKNOWN;
+	}
 
 	public static string Parse(string str, out int[] mask, out Dictionary<int, string> param, out Dictionary<string, int> preLoadAsset, bool enableRichText)
-    {
-        Stopwatch st = new Stopwatch();
-        st.Start();
+	{
+		Stopwatch st = new Stopwatch();
+		st.Start();
 
 		str = str + "\n"; //在最后面加多一个换行符，便于parsedText解析成lineData
 
@@ -144,27 +144,27 @@ class YlyRichTextParser
 			_preLoadAsset = new Dictionary<string, int>();
 		}
 
-        st.Stop();
+		st.Stop();
 		//_logStr.Append("\nParse text use time 用时：" + st.Elapsed);
-        //Console.WriteLine(_logStr);
-        mask = _mask;
-        param = _parms;
+		//Console.WriteLine(_logStr);
+		mask = _mask;
+		param = _parms;
 		preLoadAsset = _preLoadAsset;
 
 		_mask = null;
 		_parms = null;
 		_preLoadAsset = null;
 
-        return str;
-    }
+		return str;
+	}
 
 	static void ParseSingle(string str, string rex, int ibase)
-    {
+	{
 		string arg;
-        foreach (Match mtch in Regex.Matches(str, rex))
-        {
+		foreach (Match mtch in Regex.Matches(str, rex))
+		{
 			arg = mtch.Groups[mtch.Groups.Count - 1].Value;
-            _mask[mtch.Index] = ibase + mtch.Length;
+			_mask[mtch.Index] = ibase + mtch.Length;
 			if(ibase == YlyRichTextParser.RICHTEXT_EMOTE_BASE){//表情
 				int eidx = -1;
 				if(int.TryParse(arg, out eidx))
@@ -195,8 +195,8 @@ class YlyRichTextParser
 			}
 			_parms[mtch.Index] = arg;
 			//_logStr.Append("type=" + (ibase / YlyRichTextParser.RICHTEXT_MULL_BASE) + ", str=" + mtch.Value + ", arg=" + _parms[mtch.Index] + ", idx= " + mtch.Index + ", len= " + mtch.Length + "\n");
-        }
-    }
+		}
+	}
 
 	//是否是标点符号
 	public static bool IsPunctuation(char str)
@@ -205,8 +205,8 @@ class YlyRichTextParser
 	}
 
 	public static string GetLog()
-    {
+	{
 		//return _logStr.ToString();
 		return "为了避免不必要的性能消耗，富文本的log被屏蔽了=、=";
-    }
+	}
 }
