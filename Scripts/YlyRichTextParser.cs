@@ -92,7 +92,7 @@ class YlyRichTextParser
 		if (enableRichText) {
 			//<r>替换为正常的回车;
 			str = str.Replace ("<r>", "\n");
-			str = Regex.Replace(str, @"<color\W+#(\w+)>([\s\S]*?)</color>", "#C($1)$2#C()"); //兼容原生的<color=#xxxxxxxx></color>占位符
+			
 			_mask = new int[str.Length];
 			//_logStr.Remove (0, _logStr.Length);
 			//_logStr.Append ("===============YlyRichTextParser：分析串: \n" + str + "\n");
