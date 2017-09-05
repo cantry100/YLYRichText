@@ -38,7 +38,7 @@ public class YlyRichTextMenu
 
 [CustomEditor(typeof(YlyRichText), true)]
 [CanEditMultipleObjects]
-public class QtzRichTextEditor : GraphicEditor
+public class YlyRichTextEditor : GraphicEditor
 {
 	YlyRichText _target;
 	SerializedProperty text;
@@ -165,7 +165,6 @@ public class QtzRichTextEditor : GraphicEditor
 			_target.enableRichText = enableRichText.boolValue;
 		}
 
-		RaycastControlsGUI();
 		serializedObject.ApplyModifiedProperties();
 	}
 }
