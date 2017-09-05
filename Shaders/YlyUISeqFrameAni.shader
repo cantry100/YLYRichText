@@ -98,6 +98,7 @@
 				//右上角newUv = float2(3/5, 0) + uv(1, 1) * float2(1/5, 1/2) = float2(3/5, 0) + float2(1/5, 1/2) = float2(4/5, 1/2)
 				//右下角newUv = float2(3/5, 0) + uv(1, 0) * float2(1/5, 1/2) = float2(3/5, 0) + float2(1/5, 0) = float2(4/5, 0)
 				fixed4 col = tex2D(_MainTex, newUv);
+				
 				return col;
 			}
 			ENDCG
