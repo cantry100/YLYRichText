@@ -668,6 +668,31 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		public AssetData assetData = null;
 		public LinkData linkData = null;
 		public LineData linedata = null;
+
+        public CalcCharData Copy()
+        {
+            CalcCharData copy = new CalcCharData();
+            copy.i = i;
+            copy.blockType = blockType;
+            copy.blockLen = blockLen;
+            copy.charX = charX;
+            copy.charW = charW;
+            copy.lastBlockType = lastBlockType;
+            copy.sclr = sclr;
+            copy.eclr = eclr;
+            copy.advanceX = advanceX;
+            copy.offcharX = offcharX;
+            copy.fontStyle = fontStyle;
+            copy.fontSize = fontSize;
+            copy.isSpaceOrTabChar = isSpaceOrTabChar;
+            copy.underWireData = underWireData;
+            copy.deleteWireData = deleteWireData;
+            copy.assetData = assetData;
+            copy.linkData = linkData;
+            copy.linedata = linedata;
+
+            return copy;
+        }
 	}
 
 	protected YlyRichText(){
@@ -1051,6 +1076,16 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		if(m_IsCustomWidthToNewLine){
 			customWidthToNewLine = m_CustomWidthToNewLine;
 		}
+
+        if (ccData.isSpaceOrTabChar && ccData.blockType == 0)
+        {
+            float nextWordWidth = GetNextWordWidth(ccData);
+            if (totalWidth + nextWordWidth + ccData.charW + ccData.advanceX >= customWidthToNewLine)
+            {
+                totalWidth = customWidthToNewLine + ccData.charW + ccData.advanceX;
+            }
+        }
+
 		if ((m_HorizontalOverflow == HorizontalWrapMode.Wrap && (totalWidth - m_OffCharX) >= customWidthToNewLine) || m_ParsedText [ccData.i] == '\n') {//满行，或有换行符;
 			ccData.linedata.width = Mathf.Max(totalWidth - ccData.advanceX - m_OffCharX, 0);
 
@@ -1109,6 +1144,129 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		}
 		return false;
 	}
+
+    private float GetNextWordWidth(CalcCharData data)
+    {
+        var copy = data.Copy();
+
+        copy.i++;
+        float wordWidth = 0;
+        CharacterInfo ci;
+        while (copy.i < m_ParsedText.Length && !(m_ParsedText[copy.i] == ' ' || m_ParsedText[copy.i] == '\n'))
+        {
+            copy.blockType = m_StrMask[copy.i] / UGUIRichTextParser.RICHTEXT_MULL_BASE * UGUIRichTextParser.RICHTEXT_MULL_BASE;
+            copy.blockLen = m_StrMask[copy.i] - copy.blockType;
+
+            if (copy.blockType == UGUIRichTextParser.RICHTEXT_COLOR_BASE)
+            {//字体颜色
+                if (CalcColorBegin(copy))
+                {
+                    continue;
+                }
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_COLOR_END)
+            {//颜色结束块;
+                CalcColorEnd(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_UNDER_LINE_BASE)
+            {//下划线起始块;
+                CalcUnderLineBegin(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_UNDER_LINE_END)
+            {//下划线结束块;
+                if (CalcUnderLineEnd(copy))
+                {
+                    continue;
+                }
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_DELETE_LINE_BASE)
+            {//删除线起始块;
+                CalcDelLineBegin(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_DELETE_LINE_END)
+            {//删除线结束块;
+                CalcDelLineEnd(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_LINK_BASE)
+            {//超链接起始块;
+                if (CalcLinkBegin(copy))
+                {
+                    continue;
+                }
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_LINK_END)
+            {//超链接结束块;
+                if (CalcLinkEnd(copy))
+                {
+                    continue;
+                }
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_BOLD_BASE)
+            {//加粗起始块;
+                CalcBoldBegin(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_BOLD_END)
+            {//加粗结束块;
+                CalcBoldEnd(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_ITALIC_BASE)
+            {//斜体起始块;
+                CalcItalicBegin(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_ITALIC_END)
+            {//斜体结束块;
+                CalcItalicEnd(copy);
+                continue;
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_SIZE_BASE)
+            {//字体大小起始块;
+                if (CalcFontSizeBegin(copy))
+                {
+                    continue;
+                }
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_SIZE_END)
+            {//字体大小结束块;
+                CalcFontSizeEnd(copy);
+                continue;
+            }
+
+            m_Font.RequestCharactersInTexture(m_ParsedText[copy.i].ToString(), fontSize, copy.fontStyle);
+            m_Font.GetCharacterInfo(m_ParsedText[copy.i], out ci, fontSize, copy.fontStyle);
+
+            //由于表情、图片等资源和普通字符需要判断换行，特殊处理
+            if (copy.blockType == UGUIRichTextParser.RICHTEXT_EMOTE_BASE)
+            {//表情;
+                CalcEmote(copy, ref ci);
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_RES_PATH_BASE)
+            {//图片
+                CalcPic(copy, ref ci);
+            }
+            else if (copy.blockType == UGUIRichTextParser.RICHTEXT_CICON_BASE)
+            {//定制图标
+                CalcCIcon(copy, ref ci);
+            }
+            else
+            { //普通字符
+                CalcNormalChar(copy, ref ci);
+            }
+
+            copy.advanceX = copy.charW + m_OffCharX;
+            copy.offcharX = m_OffCharX;
+            wordWidth += copy.advanceX;
+
+            copy.i++;
+        }
+        return wordWidth;
+    }
 
 	void CalcAlign(){
 		float lineBeginX = -rectTransform.pivot.x * rectTransform.rect.width;
