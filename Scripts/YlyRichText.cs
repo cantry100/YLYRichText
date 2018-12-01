@@ -100,7 +100,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		}
 	}
 
-	public Color color {
+	public override Color color {
 		get
 		{
 			return m_TColor;
@@ -1451,7 +1451,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		}
 	}
 
-	void OnDestroy(){
+	protected override void OnDestroy(){
 		Font.textureRebuilt -= FontTextureRebuilt;
 		ClearAssetGo();
 		m_Lines.Clear();
