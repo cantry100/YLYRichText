@@ -958,7 +958,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 	}
 
 	void CalcFontSizeEnd(CalcCharData ccData){
-		ccData.fontSize = m_FontSize;
+		// ccData.fontSize = m_FontSize;
 		ccData.i += ccData.blockLen - 1;
 		ccData.lastBlockType = ccData.blockType;
 	}
@@ -1241,8 +1241,8 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 				continue;
 			}
 
-			m_Font.RequestCharactersInTexture(m_ParsedText[ccData.i].ToString(), fontSize, ccData.fontStyle);
-			m_Font.GetCharacterInfo(m_ParsedText[ccData.i], out ci, fontSize, ccData.fontStyle);
+			m_Font.RequestCharactersInTexture(m_ParsedText[ccData.i].ToString(), ccData.fontSize, ccData.fontStyle);
+			m_Font.GetCharacterInfo(m_ParsedText[ccData.i], out ci, ccData.fontSize, ccData.fontStyle);
 
 			//由于表情、图片等资源和普通字符需要判断换行，特殊处理
 			if (ccData.blockType == YlyRichTextParser.RICHTEXT_EMOTE_BASE) {//表情;
