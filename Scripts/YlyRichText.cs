@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using System.Text;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -100,7 +99,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		}
 	}
 
-	public Color color {
+	public override Color color {
 		get
 		{
 			return m_TColor;
@@ -408,6 +407,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		public float beginX = 0f;
 		public float endX = 0f;
 		public Color32 uColor = Color.blue;
+		public int fontSize;
 	}
 
 	//超链接数据
@@ -493,8 +493,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 			}
 
 			CharacterInfo ci;
-			ylyRichText.font.GetCharacterInfo('_', out ci, ylyRichText.fontSize, FontStyle.Normal);
-
+			ylyRichText.font.GetCharacterInfo('_', out ci, wireData.fontSize, FontStyle.Normal);
 			int ymin = ci.minY;
 			int ymax = ci.maxY;
 
@@ -503,31 +502,29 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 			ymin = 0;
 			//xy左下角归零，避免出现位置误差--end
 
-			ylyRichText.font.GetCharacterInfo('▇', out ci, ylyRichText.fontSize, FontStyle.Normal);
-
-			//截取字符▇贴图中间木有抗锯齿和变淡效果的一小块作为下划线的贴图uv
-			float charUVWQua = (ci.uvTopRight.x - ci.uvTopLeft.x) / 4;
-			float charUVHQua = (ci.uvTopLeft.y - ci.uvBottomLeft.y) / 4;
-
+			//截取'_'中垂线作为uv坐标。注意'_' 的uv坐标，貌似和其他字符不同，是按照BR、TR、TL、BL来排序的（传统的是TL、TR、BR、BL，所以计算时需要注意。
+			//另外不清楚为什么用这种方式渲染出来的下划线，还是比'_'少了上下渐变，等待进一步研究
+			float charUVWQua = Mathf.Abs(ci.uvTopRight.x - ci.uvBottomLeft.x) / 2;
+			
 			UIVertex uiVertex0 = new UIVertex ();
 			uiVertex0.position = new Vector3 (wireData.beginX, ymax, z);
 			uiVertex0.color = wireData.uColor;
-			uiVertex0.uv0 = new Vector2(ci.uvTopLeft.x + charUVWQua, ci.uvTopLeft.y - charUVHQua);
-
+			uiVertex0.uv0 = new Vector2(ci.uvBottomRight.x + charUVWQua, ci.uvBottomRight.y); 
+			
 			UIVertex uiVertex1 = new UIVertex ();
 			uiVertex1.position = new Vector3 (wireData.endX, ymax, z);
 			uiVertex1.color = wireData.uColor;
-			uiVertex1.uv0 = new Vector2(ci.uvTopRight.x - charUVWQua, ci.uvTopRight.y - charUVHQua);
-
+			uiVertex1.uv0 = new Vector2(ci.uvTopRight.x - charUVWQua, ci.uvTopRight.y);
+			
 			UIVertex uiVertex2 = new UIVertex ();
 			uiVertex2.position = new Vector3 (wireData.endX, ymin, z);
 			uiVertex2.color = wireData.uColor;
-			uiVertex2.uv0 = new Vector2(ci.uvBottomRight.x - charUVWQua, ci.uvBottomRight.y + charUVHQua);
+			uiVertex2.uv0 = new Vector2(ci.uvTopLeft.x - charUVWQua,ci.uvTopLeft.y);
 
 			UIVertex uiVertex3 = new UIVertex ();
 			uiVertex3.position = new Vector3 (wireData.beginX, ymin, z);
 			uiVertex3.color = wireData.uColor;
-			uiVertex3.uv0 = new Vector2(ci.uvBottomLeft.x + charUVWQua, ci.uvBottomLeft.y + charUVHQua);
+			uiVertex3.uv0 = new Vector2(ci.uvBottomLeft.x + charUVWQua,ci.uvBottomLeft.y);
 
 			CharData charData = new CharData();
 			if (wireData.wireType == WireType.UnderWire) {
@@ -540,7 +537,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 			charData.vertices [0] = uiVertex0;
 			charData.vertices [1] = uiVertex1;
 			charData.vertices [2] = uiVertex2;
-			charData.vertices [3] = uiVertex3;
+			charData.vertices [3] = uiVertex3;			
 			charDatas.Add(charData);
 			return true;
 		}
@@ -834,6 +831,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 
 	void CalcUnderLineBegin(CalcCharData ccData){
 		ccData.underWireData = new WireData();
+		ccData.underWireData.fontSize = ccData.fontSize;
 		ccData.underWireData.beginX = ccData.charX;
 		ccData.underWireData.uColor = ccData.sclr;
 		ccData.i += ccData.blockLen - 1;
@@ -854,6 +852,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 
 	void CalcDelLineBegin(CalcCharData ccData){
 		ccData.deleteWireData = new WireData();
+		ccData.deleteWireData.fontSize = ccData.fontSize;
 		ccData.deleteWireData.wireType = WireType.DeleteWire;
 		ccData.deleteWireData.beginX = ccData.charX;
 		ccData.deleteWireData.uColor = m_TColor;
@@ -958,7 +957,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 	}
 
 	void CalcFontSizeEnd(CalcCharData ccData){
-		ccData.fontSize = m_FontSize;
+		// ccData.fontSize = m_FontSize;
 		ccData.i += ccData.blockLen - 1;
 		ccData.lastBlockType = ccData.blockType;
 	}
@@ -1059,6 +1058,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 				ccData.underWireData.endX = ccData.charX - m_OffCharX;
 				ccData.linedata.AddWireData (ccData.underWireData);
 				ccData.underWireData = new WireData();
+				ccData.underWireData.fontSize = ccData.fontSize;
 				ccData.underWireData.beginX = 0f;
 				ccData.underWireData.uColor = uColor;
 			}
@@ -1067,6 +1067,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 				ccData.deleteWireData.endX = ccData.charX - m_OffCharX;
 				ccData.linedata.AddWireData (ccData.deleteWireData);
 				ccData.deleteWireData = new WireData();
+				ccData.deleteWireData.fontSize = ccData.fontSize;
 				ccData.deleteWireData.wireType = WireType.DeleteWire;
 				ccData.deleteWireData.beginX = 0f;
 				ccData.deleteWireData.uColor = uColor;
@@ -1241,8 +1242,8 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 				continue;
 			}
 
-			m_Font.RequestCharactersInTexture(m_ParsedText[ccData.i].ToString(), fontSize, ccData.fontStyle);
-			m_Font.GetCharacterInfo(m_ParsedText[ccData.i], out ci, fontSize, ccData.fontStyle);
+			m_Font.RequestCharactersInTexture(m_ParsedText[ccData.i].ToString(), ccData.fontSize, ccData.fontStyle);
+			m_Font.GetCharacterInfo(m_ParsedText[ccData.i], out ci, ccData.fontSize, ccData.fontStyle);
 
 			//由于表情、图片等资源和普通字符需要判断换行，特殊处理
 			if (ccData.blockType == YlyRichTextParser.RICHTEXT_EMOTE_BASE) {//表情;
@@ -1451,7 +1452,7 @@ public class YlyRichText : MaskableGraphic, ILayoutElement, IPointerClickHandler
 		}
 	}
 
-	void OnDestroy(){
+	protected override void OnDestroy(){
 		Font.textureRebuilt -= FontTextureRebuilt;
 		ClearAssetGo();
 		m_Lines.Clear();
